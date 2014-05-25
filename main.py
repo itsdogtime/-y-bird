@@ -1,15 +1,12 @@
 #!/usr/bin/env python
+
 # (c) Cameron Bland
-# github.com/itsdogtime/
+# http://github.com/itsdogtime/-y-bird
 
 import os
 from random import randint
 from time import sleep
-
 import curses
-stdscr = curses.initscr()
-stdscr.keypad(1)
-stdscr.nodelay(1)
 
 class Player():
 	def __init__(self):
@@ -56,7 +53,7 @@ class Walls():
 	def __getitem__(self,i):
 		return self.walls[i]
 
-	def generate_walls(self):
+	def generate_walls(self): # returns a list of ints. the list[pos] is the wall itself, the number is the hole
 		self.walls = [randint(2,res["h"]-self.edge_buffer) if x % self.space_size == 0 else 0 for x in xrange(0,res["w"])]
 
 	def increment_walls(self):
@@ -70,12 +67,7 @@ class Walls():
 			self.walls.append(0)
 
 def get_res():
-	try:
-		h,w = stdscr.getmaxyx()
-	except:
-		w  = 80
-		h = 25
-
+	h,w = stdscr.getmaxyx()
 	return {"w" : w, "h": h}
 
 def build_map(res):
@@ -87,41 +79,30 @@ def print_map(cmap, walls):
 	max_height = len(cmap)
 	max_width = len(cmap[0])
 
-	# for dev on machine that has a broken curses lib
-	# could improve performance by appending to a list then joining list
-	# however this is fine.
-	mapstring = '' 
+	mapstring = []
 
 	for i_y,y in enumerate(cmap): # iter over y
 		for i_x,x in enumerate(y):# iter over x
 
 			if i_y == max_height - 1 and i_x == max_width - 1: 
-				pass # Do not write to last character in screen or curses will abort (ERR)
-			else:
-				if i_x == 2 and i_y == 12:
-					mapstring += "Score: %03d" % player.score # print the score
-				elif i_x > 2 and i_x < 12 and i_y == 12: #don't print 9 chars to account for adding 10 in 1 iter
-					pass
-				elif player.x == i_x and player.y == i_y:
-					# stdscr.addstr(player.tile)
-					mapstring += player.tile
-				elif walls[i_x]:
-					if i_y < walls[i_x] - walls.hole_size or i_y > walls[i_x] + walls.hole_size:
-						mapstring += walls.tile
-					else:
-						mapstring += x
+				break # Do not write to last character in screen or curses will abort (ERR)
+
+			if i_x == 2 and i_y == 12:
+				mapstring.append("Score: %03d" % player.score) # print the score
+			elif i_x > 2 and i_x < 12 and i_y == 12: #don't print 9 chars to account for adding 10 in 1 iter
+				pass
+			elif player.x == i_x and player.y == i_y:
+				mapstring.append(player.tile)
+			elif walls[i_x]:
+				if i_y < walls[i_x] - walls.hole_size or i_y > walls[i_x] + walls.hole_size:
+					mapstring.append(walls.tile)
 				else:
-					# stdscr.addstr(x)
-					mapstring += x
+					mapstring.append(x)
+			else:
+				# stdscr.addstr(x)
+				mapstring.append(x)
 
-				# lines seem to wrap overfilling lines causes double wrapping
-				# if i_x == max_width - 1: 
-					# mapstring += "\n"
-
-	stdscr.clear()
-	stdscr.addstr(mapstring)
-	stdscr.refresh() #
-	# print mapstring
+	return "".join(mapstring)
 
 
 def collision_detect():
@@ -134,7 +115,7 @@ def collision_detect():
 	return collision
 
 
-def main():
+def main(fps):
 	global player
 	global walls
 	cmap = build_map(res)
@@ -145,6 +126,7 @@ def main():
 
 		if p_input == ord('q') or p_input == ord('Q'):
 			stdscr.clear()
+			stdscr.refresh()
 			exit(0)
 		elif p_input == ord('r') or p_input == ord('R'):
 			player = Player()
@@ -157,20 +139,29 @@ def main():
 		if not player.dead:
 			walls.increment_walls()
 			player.dead = collision_detect()
-			print_map(cmap, walls)
+			frame = print_map(cmap, walls)
 		else:
-			stdscr.clear()
-			stdscr.refresh()
-			print "Game Over. Thanks Obama."
-			print "Final score = %03d" % player.score
-			print "Press 'r' to reset."
-			print "Press 'q' to quit."
+			frame = ["Game Over. Thanks Obama.\n",
+			"Final score = %03d\n"% player.score,
+			"Press 'r' to reset.\n",
+			"Press 'q' to quit."]
+			frame = "".join(frame)
 
-		sleep(.1)
+		stdscr.clear()
+		stdscr.addstr(frame)
+		stdscr.refresh()
+
+		sleep(fps)
 
 
 if __name__ == "__main__":
+
+	stdscr = curses.initscr()
+	stdscr.keypad(1)
+	stdscr.nodelay(1)
+
+	fps = .1
 	res = get_res()
 	walls = Walls()
 	player = Player()
-	main()
+	main(fps)

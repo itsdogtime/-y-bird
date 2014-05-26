@@ -1,3 +1,4 @@
+![Screenshot of the game](https://raw.githubusercontent.com/itsdogtime/-y-bird/master/screenshot.png)
 @y bird
 ========
 An ascii clone of flappy bird written in python.

@@ -1,12 +1,16 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # (c) Cameron Bland
 # http://github.com/itsdogtime/-y-bird
 
 import os
+import sys
 from random import randint
 from time import sleep
 import curses
+
+if sys.version_info.major >= 3:
+	xrange = range
 
 class CursesScreen():
 	def __enter__(self):
